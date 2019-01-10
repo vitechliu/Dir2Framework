@@ -1,0 +1,26 @@
+{
+    "name": "vitech/dir2framework",
+    "description": "Judge the framework based on the directory structures input.",
+    "keywords": [
+        "vitech","framework"
+    ],
+    "authors": [
+        {
+            "name":"Vitech Liu",
+            "email": "i@vitechliu.com",
+            "homepage": "http://vitechliu.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^5.3.3 || ^7.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^4.8.35 || ^5.7",
+        "squizlabs/php_codesniffer": "^1.5",
+    },
+    "minimum-stability": "dev",
+    "autoload": {
+        "D2F\\":"src/D2F/"
+    }
+}
