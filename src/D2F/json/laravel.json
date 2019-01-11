@@ -1,0 +1,10 @@
+{
+    "name":"laravel",
+    "dir":[
+        {
+            "name":"app",
+            "type":"dir",
+            "version":"all"
+        }
+    ]
+}
