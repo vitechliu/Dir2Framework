@@ -22,11 +22,13 @@
     },
     "minimum-stability": "dev",
     "autoload": {
-        "D2F\\":"src/D2F/"
+        "psr-4": {
+            "D2F\\":"src/D2F/"
+        }
     },
     "autoload-dev": {
         "psr-4": {
             "D2F\\": "tests/D2F/"
         }
-    },
+    }
 }
