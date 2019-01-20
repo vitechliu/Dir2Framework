@@ -3,10 +3,12 @@
 namespace D2F;
 
 use PHPUnit\Framework\TestCase;
-use D2F\TestD;
+use D2F\D2F;
 
 class TestTest extends TestCase {
     public function testAdd() {
-        $this->assertEquals(TestD::testAdd(1),2);
+        $d = new D2F;
+        //$d->print();
+        $this->assertInstanceOf(D2F::class,$d);
     }
 }
