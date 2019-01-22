@@ -5,7 +5,7 @@ namespace D2F;
 final class D2F {
 
     public $dir;
-
+    public $libs = [];
     public function  __construct(){
         $this->dir = dirname(__FILE__).DIRECTORY_SEPARATOR."Library";
 
@@ -14,12 +14,18 @@ final class D2F {
         }
     }
 
-    public function readLibrary($json) {
-        print_r(json_decode(file_get_contents($json),true));
+    private function readLibrary($file) {
+        $json = json_decode(file_get_contents($file),true);
+        if ($json != null) {
+            $this->libs[] = $json;
+        }
     }
 
+    public function analyze($dir) {
+        
+    }
 
-    public function print() {
-        print_r(scandir($this->dir));
+    private function checkDir($dir) {
+        return true;
     }
 }

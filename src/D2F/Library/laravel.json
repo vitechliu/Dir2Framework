@@ -17,7 +17,7 @@
             "name":"config",
             "type":"dir",
             "version":"all",
-            "children":["app.php","cache.php","database.php","hashing.php","logging.php","mail.php","queue.php","service.php"],
+            "children":["app.php","cache.php","database.php","hashing.php","logging.php","mail.php","queue.php","service.php"]
         },
         {
             "name":"database",
@@ -58,7 +58,7 @@
         {
             "name":"composer.json",
             "type":"file",
-            "version":"all",
+            "version":"all"
         },
         {
             "name":"composer.lock",
@@ -70,7 +70,7 @@
         {
             "name":"artisan",
             "type":"file",
-            "version":"all",
+            "version":"all"
         },
         {
             "name":".env",
