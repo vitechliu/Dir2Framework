@@ -10,6 +10,7 @@ class TestTest extends TestCase {
     public function testD2F() {
         print_r("\nTest D2F::\n");
         $d = new D2F;
+        
         $this->assertInstanceOf(D2F::class,$d);
     }
 
