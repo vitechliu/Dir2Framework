@@ -5,16 +5,25 @@ namespace D2F;
 use D2F\Exception\InvalidDirException;
 
 define("DEFAULT_POWER",0.5);
-define("MINUMUM_POWER",1);
+define("MINUMUM_MATCH",0.7);
 
 final class D2F {
 
+    /**
+     * Dir URL
+     *
+     * @var string
+     */
     public $dir;
+
+    /**
+     * Framework library array
+     *
+     * @var array
+     */
     public $libs = [];
 
-    
-    
-    
+
     public function  __construct(){
         $this->dir = dirname(__FILE__).DIRECTORY_SEPARATOR."Library";
 
@@ -25,22 +34,41 @@ final class D2F {
         print_r($this->layerSet($this->libs[0]["dir"],true));
     }
 
-    public function analyze($dir) {
+    /**
+     * Main function for judging the framework based on input dir structure
+     *
+     * @param array $dir Input dir
+     * @param boolean $deep Use deep searching
+     * @param boolean $simple Whether the output is simple string
+     * @return mixed
+     */
+    public function analyze($dir,$deep = true,$simple = false) {
         //First layer match
         $firstLayer = $this->layerSet($dir);
         $rec = [];
         foreach($this->libs as $framework) {
-            if ($this->compareLayer($firstLayer,$key -> $framework) >= MINUMUM_POWER) $rec[] += $key;
+            if ($this->compareLayer($firstLayer,$key -> $framework) >= MINUMUM_MATCH) $rec[] += $key;
         }
-        if (count($rec) == 0) return ""; //空
-        if (count($rec) == 1) return $this->libs[$rec[0]]["name"]; //返回唯一的
-
-        return "WIP";
+        if (count($rec) == 0) return []; //空
+        
+        if (!$deep) {
+            //TODO: Simple Search
+        } else {
+            //TODO: Deep Search
+        }
+        return [];
 
     }
 
-    
+    /**
+     * Compare one layer to one framework json
+     *
+     * @param array $layer
+     * @param array $framework
+     * @return double
+     */
     private function compareLayer($layer,$framework) {
+
         $match = 0;
         $sum = 0;
         foreach($framework["dir"] as $val) {
@@ -53,7 +81,7 @@ final class D2F {
                 $name = $val;
             }
             if (in_array($name,$layer)) {
-                $match += 1/$pow;
+                $match += 0.5/$pow;
             } else {
                 if ($pow == 1) return 0;
             }
@@ -120,6 +148,9 @@ final class D2F {
     private function validDirArray($arr) {
         if (!array_key_exists("name",$arr) || !is_string($arr["name"]))
             throw new InvalidDirException("Input dir structure contains invalid file/dir array");
+
+        if (array_ley_exists("children",$arr) && $arr["name"][0] != '/')
+            throw new InvalidDirException("Input dir structure contains invalid file/dir array: Dir structure name does not start with '/'");
 
         $this->validDirString($arr["name"]);
 
