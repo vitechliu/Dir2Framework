@@ -149,7 +149,7 @@ final class D2F {
         if (!array_key_exists("name",$arr) || !is_string($arr["name"]))
             throw new InvalidDirException("Input dir structure contains invalid file/dir array");
 
-        if (array_ley_exists("children",$arr) && $arr["name"][0] != '/')
+        if (array_key_exists("children",$arr) && $arr["name"][0] != '/')
             throw new InvalidDirException("Input dir structure contains invalid file/dir array: Dir structure name does not start with '/'");
 
         $this->validDirString($arr["name"]);
