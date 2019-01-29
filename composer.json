@@ -22,12 +22,12 @@
     "minimum-stability": "dev",
     "autoload": {
         "psr-4": {
-            "D2F\\":"src/D2F/"
+            "vitech\\D2F\\":"src/D2F/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "D2F\\": "tests/D2F/"
+            "vitech\\D2F\\": "tests/D2F/"
         }
     }
 }

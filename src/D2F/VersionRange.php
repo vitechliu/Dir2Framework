@@ -1,6 +1,6 @@
 <?php
 
-namespace D2F;
+namespace vitech\D2F;
 
 use vierbergenlars\SemVer\expression;
 
@@ -14,7 +14,7 @@ class VersionRange {
     }
 
     public function addRange($range) {
-        
+        if (trim($range) == "") return true;
         if (\in_array($range,$this->exps)) return true;
         $this->exps[] = $range;
         $exp = new expression(\implode(" || ",$this->exps));

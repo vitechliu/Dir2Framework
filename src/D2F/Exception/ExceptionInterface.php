@@ -1,6 +1,6 @@
 <?php
 
-namespace D2F\Exception;
+namespace vitech\D2F\Exception;
 
 use Throwable;
 

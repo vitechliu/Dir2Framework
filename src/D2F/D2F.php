@@ -1,13 +1,13 @@
 <?php
 
-namespace D2F;
+namespace vitech\D2F;
 
-use D2F\Exception\InvalidDirException;
+use vitech\D2F\Exception\InvalidDirException;
 
 define("DEFAULT_POWER",0.5);
 define("MINUMUM_MATCH",0.7);
 
-final class D2F {
+class D2F {
 
     /**
      * Dir URL
@@ -40,24 +40,116 @@ final class D2F {
      * @param array $dir Input dir
      * @param boolean $deep Use deep searching
      * @param boolean $simple Whether the output is simple string
+     * @throws InvalidDirException
      * @return mixed
      */
     public function analyze($dir,$deep = true,$simple = false) {
+
         //First layer match
         $firstLayer = $this->layerSet($dir);
-        $rec = [];
-        foreach($this->libs as $framework) {
-            if ($this->compareLayer($firstLayer,$key -> $framework) >= MINUMUM_MATCH) $rec[] += $key;
-        }
-        if (count($rec) == 0) return []; //空
-        
-        if (!$deep) {
-            //TODO: Simple Search
-        } else {
-            //TODO: Deep Search
-        }
-        return [];
 
+        if (count($firstLayer) == 0) 
+            throw new InvalidDirException("Input dir structure cannot be an empty array");
+
+        // $rec = [];
+        // foreach($this->libs as $framework) {
+        //     if ($this->compareLayer($firstLayer,$key -> $framework) >= MINUMUM_MATCH) $rec[] += $key;
+        // }
+        // if (count($rec) == 0) return []; //空
+        
+        $ans = [];
+        if ($deep) {
+            //TODO: Deep Search
+            foreach($this->libs as $framework) {
+                $ans[] = [
+                    "name" => $framework["name"],
+                    "result" => $this->deepCompare($dir,$framework["dir"])
+                ];
+            }
+        } else {
+            //TODO: Simple Search
+        }
+        
+        return $ans;
+
+    }
+
+    protected function deepCompare($dir,$lib) {
+        $ans = [
+            "tag" => [],
+            "version" => "",
+        ];
+        // dir 和 lib都是count不为0的数组
+
+        $sum = 0;
+        $match = 0;
+        foreach ($lib as $libVal) {
+            $sum ++;
+            $pow = DEFAULT_POWER;
+            $libHasChildren = false;
+            $libIsArray = is_array($libVal);
+            $libTag = [];
+            $libVersion = "";
+
+            if ($libIsArray) {
+                $pow = array_key_exists("power",$libVal) ? $libVal["power"] : DEFAULT_POWER;
+                $name = $libVal["name"];
+                $libHasChildren = array_key_exists("children",$libVal);
+                $libTag = array_key_exists("tag",$libVal) ? $libVal["tag"] : [];
+                $libVersion = array_key_exists("version",$libVal) ? $libVal["version"] : "";
+            } else {
+                $name = $libVal;
+            }
+            $tempMatch = 1/($pow + 0.001);
+            foreach($dir as $dirVal) {
+                if (is_array($dirVal) && validDirArray($dirVal)) {
+                    if ($dirVal["name"] == $name) {
+                        $tm = $tempMatch;
+                        
+                        if (array_key_exists("children",$dirVal) && $libHasChildren && !empty($dirVal["children"])) {
+                            $deepAns = $this->deepCompare($dirVal["children"],$libVal["children"]);
+                            if ($deepAns["match"] > 0) {
+                                $ans = $this->mergeAns($ans,$deepAns);
+                                $tm *= $deepAns["match"];
+                            } else break;
+                        }
+                        $ans = $this->mergeAns($ans,["tag"=>$libTag,"version"=> $libVersion]);
+                        $match += $tm;
+                        break;
+                    } 
+                } else if (is_string($dirVal) && $this->validDirString($dirVal)) {
+                    if ($dirVal == $name) {
+                        $ans = $this->mergeAns($ans,["tag"=>$libTag,"version"=> $libVersion]);
+                        $match += $tempMatch;
+                        break;
+                    }
+                } else {
+                    throw new InvalidDirException("Input dir structure contains invalid type");
+                }
+            }
+            
+            //Power Bigger Than 1 with no match would stop searching
+            if ($match == 0 && $pow >= 1) return ["match" => 0];
+        }
+        $ans["match"] = $match / $sum;
+        
+        return $ans;
+    }
+
+    protected function mergeAns($ans1,$ans2) {
+        if (empty($ans1)) return $ans2;
+        if (empty($ans2)) return [];
+
+        $tag = \array_merge(array_key_exists("tag",$ans1) ? $ans1["tag"] : [],array_key_exists("tag",$ans2) ? $ans2["tag"] : []);
+        if (array_key_exists("version",$ans1)) {
+            $version = new VersionRange($ans1["version"]);
+            if (array_key_exists("version",$ans2)) $version->addRange($ans2["version"]);
+        } else if (array_key_exists("version",$ans2)) $version = new VersionRange($ans2["version"]);
+        else $version = new VersionRange("");
+        return [
+            "tag" => $tag,
+            "version" => $version->getRange(),
+        ];
     }
 
     /**
@@ -67,7 +159,7 @@ final class D2F {
      * @param array $framework
      * @return double
      */
-    private function compareLayer($layer,$framework) {
+    protected function compareLayer($layer,$framework) {
 
         $match = 0;
         $sum = 0;
@@ -96,7 +188,7 @@ final class D2F {
      * @param string $file
      * @return void
      */
-    private function readLibrary($file) {
+    protected function readLibrary($file) {
         $json = json_decode(file_get_contents($file),true);
         if ($json != null) {
             $this->libs[] = $json;
@@ -106,10 +198,10 @@ final class D2F {
     /**
      * Export one layer of input dir
      *
-     * @param mixed $layer
+     * @param array $layer
      * @return array
      */
-    private function layerSet($layer) {
+    protected function layerSet($layer) {
         if (!is_array($layer)) 
             throw new InvalidDirException("Input dir structure is not an array");
 
@@ -131,8 +223,9 @@ final class D2F {
      * @return boolean
      * @throws InvalidDirException
      */
-    private function validDirString($str) {
-        if (strlen(trim($str)) == 0)
+    protected function validDirString($str) {
+        $ss = trim($str);
+        if (strlen($ss) == 0 || $ss == '/' || $ss == '//' || $ss == "/ /")
             throw new InvalidDirException("Input dir structure contains invalid file/dir");
 
         return true;
@@ -145,12 +238,15 @@ final class D2F {
      * @return boolean
      * @throws InvalidDirException
      */
-    private function validDirArray($arr) {
+    protected function validDirArray($arr) {
         if (!array_key_exists("name",$arr) || !is_string($arr["name"]))
             throw new InvalidDirException("Input dir structure contains invalid file/dir array");
 
         if (array_key_exists("children",$arr) && $arr["name"][0] != '/')
             throw new InvalidDirException("Input dir structure contains invalid file/dir array: Dir structure name does not start with '/'");
+
+        // if (array_key_exists("tag",$arr) && array_key_exists("power",$arr))
+        //     throw new InvalidDirException("Input dir structure contains invalid file/dir array: Dir structure can't countain both 'tag' and 'power'");
 
         $this->validDirString($arr["name"]);
 
