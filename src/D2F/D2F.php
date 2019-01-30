@@ -5,7 +5,7 @@ namespace vitech\D2F;
 use vitech\D2F\Exception\InvalidDirException;
 
 define("DEFAULT_POWER",0.5);
-define("MINUMUM_MATCH",0.7);
+define("MINUMUM_MATCH",0.2);
 
 class D2F {
 
@@ -21,8 +21,11 @@ class D2F {
      *
      * @var array
      */
-    public $libs = [];
+    protected $libs = [];
 
+    protected $globalLib = [];
+
+    protected $tempTags = [];
 
     public function  __construct(){
         $this->dir = dirname(__FILE__).DIRECTORY_SEPARATOR."Library";
@@ -30,8 +33,8 @@ class D2F {
         foreach(glob($this->dir.DIRECTORY_SEPARATOR.'*') as $file) {
            $this->readLibrary($file);
         }
-        
-        print_r($this->layerSet($this->libs[0]["dir"],true));
+
+        $this->globalLib =  json_decode(file_get_contents($this->dir.DIRECTORY_SEPARATOR."global.json"),true);
     }
 
     /**
@@ -40,11 +43,12 @@ class D2F {
      * @param array $dir Input dir
      * @param boolean $deep Use deep searching
      * @param boolean $simple Whether the output is simple string
+     * @param boolean $showAll Show low-match result
      * @throws InvalidDirException
-     * @return mixed
+     * @return array
      */
-    public function analyze($dir,$deep = true,$simple = false) {
-
+    public function analyze($dir,$deep = true,$simple = false,$showAll = false) {
+        
         //First layer match
         $firstLayer = $this->layerSet($dir);
 
@@ -58,33 +62,81 @@ class D2F {
         // if (count($rec) == 0) return []; //空
         
         $ans = [];
+        $first = true;
         if ($deep) {
-            //TODO: Deep Search
+
             foreach($this->libs as $framework) {
-                $ans[] = [
-                    "name" => $framework["name"],
-                    "result" => $this->deepCompare($dir,$framework["dir"])
-                ];
+                $fd = $framework["dir"];    
+                $res = $this->deepCompare($dir,$fd);
+                $minMatch = $showAll ? 0 : MINUMUM_MATCH;
+                if ($res["match"] > $minMatch)
+                    $ans[] = [
+                        "name" => $framework["name"],
+                        "result" => $this->deepCompare($dir,$framework["dir"])
+                    ];
             }
         } else {
             //TODO: Simple Search
         }
+
+        if (empty($ans)) {
+            return [];
+        }
+
+        uasort($ans,[$this,"matchSort"]);
         
-        return $ans;
+        if ($simple) {
+            $ansSimple = [];
+            foreach($ans as $val) {
+                $ansSimple[] = $val["name"];
+            }
+            return $ansSimple;
+        } 
+
+        $this->tempTags = $this->compareGlobal($firstLayer);
+
+        return array_map([$this,"formatResult"],$ans);
 
     }
 
+    protected function matchSort($a,$b) {
+        $aa = $a["result"]["match"];
+        $bb = $b["result"]["match"];
+        if ($aa == $bb) return 0;
+        return ($aa > $bb) ? -1 : 1;
+    }
+
+    protected function formatResult($ans) {
+        $ansC= $ans;
+        if (strpos($ansC["name"],"#")) {
+            $dd = explode("#",$ansC["name"]);
+            $ansC["name"] = $dd[0];
+            $ansC["subname"] = $dd[1];
+        } else {
+            $ansC["subname"] = "";
+        }
+        if (!empty($this->tempTags)) $ansC["result"]["tag"] = array_unique(array_merge($ansC["result"]["tag"],$this->tempTags));
+
+        return $ansC;
+    }
+
+    /**
+     * Deep Compare Dir with Lib
+     *
+     * @param array $dir Input dir array
+     * @param array $lib Library dir array
+     * @throws InvalidDirException
+     * @return array
+     */
     protected function deepCompare($dir,$lib) {
         $ans = [
             "tag" => [],
             "version" => "",
         ];
-        // dir 和 lib都是count不为0的数组
 
         $sum = 0;
         $match = 0;
         foreach ($lib as $libVal) {
-            $sum ++;
             $pow = DEFAULT_POWER;
             $libHasChildren = false;
             $libIsArray = is_array($libVal);
@@ -100,7 +152,14 @@ class D2F {
             } else {
                 $name = $libVal;
             }
-            $tempMatch = 1/($pow + 0.001);
+
+            //Count tagged dirs and dirs with version as 0.5 power with no sum
+            if (empty($libTag) && $libVersion == "") $sum ++;
+
+            //Global Tag
+            if (array_key_exists("global",$libVal)) $tempMatch = 0;
+            else $tempMatch = 1/($pow + 0.001);
+
             foreach($dir as $dirVal) {
                 if (is_array($dirVal) && validDirArray($dirVal)) {
                     if ($dirVal["name"] == $name) {
@@ -129,18 +188,25 @@ class D2F {
             }
             
             //Power Bigger Than 1 with no match would stop searching
-            if ($match == 0 && $pow >= 1) return ["match" => 0];
+            if ($match == 0 && $pow >= 1) return ["tag"=>[],"version"=>"","match" => 0];
         }
         $ans["match"] = $match / $sum;
         
         return $ans;
     }
 
+    /**
+     * Merge result array
+     *
+     * @param array $ans1
+     * @param array $ans2
+     * @return array
+     */
     protected function mergeAns($ans1,$ans2) {
         if (empty($ans1)) return $ans2;
         if (empty($ans2)) return [];
 
-        $tag = \array_merge(array_key_exists("tag",$ans1) ? $ans1["tag"] : [],array_key_exists("tag",$ans2) ? $ans2["tag"] : []);
+        $tag =  array_unique(array_merge(array_key_exists("tag",$ans1) ? $ans1["tag"] : [],array_key_exists("tag",$ans2) ? $ans2["tag"] : []));
         if (array_key_exists("version",$ans1)) {
             $version = new VersionRange($ans1["version"]);
             if (array_key_exists("version",$ans2)) $version->addRange($ans2["version"]);
@@ -153,33 +219,20 @@ class D2F {
     }
 
     /**
-     * Compare one layer to one framework json
+     * Compare main layer with global tags
      *
      * @param array $layer
-     * @param array $framework
-     * @return double
+     * @return array
      */
-    protected function compareLayer($layer,$framework) {
-
-        $match = 0;
-        $sum = 0;
-        foreach($framework["dir"] as $val) {
-            $sum ++;
-            $pow = DEFAULT_POWER;
-            if (is_array($val)) {
-                $pow = array_key_exists("power",$val) ? $val["power"] : DEFAULT_POWER;
-                $name = $val["name"];
-            } else {
-                $name = $val;
-            }
-            if (in_array($name,$layer)) {
-                $match += 0.5/$pow;
-            } else {
-                if ($pow == 1) return 0;
-            }
-            
+    protected function compareGlobal($layer) {
+        $tags = [];
+        foreach($this->globalLib as $val) {
+            if (in_array($val["name"],$layer)) {
+                $tags = array_merge($val["tag"],$tags);
+            } 
         }
-        return $match / $sum;
+        array_unique($tags);
+        return $tags;
     }
 
     /**
@@ -189,6 +242,7 @@ class D2F {
      * @return void
      */
     protected function readLibrary($file) {
+        if (strpos($file,"global.json")!=false) return;
         $json = json_decode(file_get_contents($file),true);
         if ($json != null) {
             $this->libs[] = $json;

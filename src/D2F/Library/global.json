@@ -1,0 +1,44 @@
+[
+    {
+        "name":"/.git",
+        "tag":["git"]
+    },
+    {
+        "name":".gitignore",
+        "tag":["gitignore"]
+    },
+    {
+        "name":".gitkeep",
+        "tag":["gitkeep"]
+    },
+    {
+        "name":"package.json",
+        "tag":["npm"]
+    },
+    {
+        "name":"package-lock.json",
+        "tag":["npm"]
+    },
+    {
+        "name":"/node_modules",
+        "tag":["npm"]
+    },
+    {
+        "name":"composer.json",
+        "tag":["composer"]
+    },
+    {
+        "name":"composer.lock",
+        "tag":["composer","installed"]
+    },
+    {
+        "name":".DS_Store",
+        "tag":["mac-finder"],
+        "_comment":"Mac Finder generated"
+    },
+    {
+        "name":".vscode",
+        "tag":["vscode"],
+        "_comment":"VSCode project folder"
+    }
+]

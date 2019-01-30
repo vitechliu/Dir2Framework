@@ -3,7 +3,29 @@
     "dir":[
         {
             "name":"/app",
-            "children":["/Console","/Exceptions","/Http","/Providers"]
+            "children":["/Console","/Exceptions",
+                {   
+                    "name":"/Http",
+                    "children":["/Controllers","/MiddleWare",
+                        {
+                            "name":"routes.php",
+                            "version":"<=5.2.0"
+                        }
+                    ]
+                },
+                {
+                    "name":"/Providers",
+                    "version":"^5.0.0"
+                },
+                {
+                    "name":"/start",
+                    "version":"<5.0.0"
+                },
+                {
+                    "name":"/models",
+                    "version":"<5.0.0"
+                }
+            ]
         },
         {
             "name":"/bootstrap",
@@ -27,7 +49,8 @@
         },
         {
             "name":"/routes",
-            "children":["web.php"]
+            "children":["web.php","api.php"],
+            "version":">=5.3.0"
         },
         {
             "name":"/storage",
@@ -38,33 +61,40 @@
             "children":["/Features","/Unit"]
         },
         {
-            "name":"composer.json",
-            "version":"all"
+            "name":"composer.json"
         },
         {
             "name":"composer.lock",
-            "tag":["installed"],
-            "power":0.1
+            "tag":["installed"]
         },
         {
             "name":"artisan"
         },
         {
             "name":".env",
-            "tag":["settled"],
-            "power":0.1
+            "tag":["installed"],
+            "version":">=4.1.0"
+        },
+        {
+            "name":".env.example",
+            "version":">=4.1.0"
         },
         {
             "name":"/vendor",
             "children":["autoload.php"],
-            "tag":["installed"],
-            "power":0.1
+            "tag":["composer","installed"]
+        },
+        {
+            "name":"package.json",
+            "tag":["npm"]
+        },
+        {
+            "name":"package-lock.json",
+            "tag":["npm","npm5"]
         },
         {
             "name":"/node_modules",
-            "children":["autoload.php"],
-            "tag":["installed","with"],
-            "power":0
+            "tag":["npm"]
         }
     ]
 }

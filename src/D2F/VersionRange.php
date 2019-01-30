@@ -15,9 +15,9 @@ class VersionRange {
 
     public function addRange($range) {
         if (trim($range) == "") return true;
-        if (\in_array($range,$this->exps)) return true;
+        if (in_array($range,$this->exps)) return true;
         $this->exps[] = $range;
-        $exp = new expression(\implode(" || ",$this->exps));
+        $exp = new expression(implode(" ",$this->exps));
         if ($exp->validRange() == null) return false;
         $this->ee = $exp->validRange();
         return true;
