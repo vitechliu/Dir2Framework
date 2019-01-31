@@ -1,5 +1,5 @@
 {
-    "name":"vue-cli",
+    "name":"vue-cli#3.0",
     "dir":[
         {
             "name":"/src",
@@ -8,7 +8,23 @@
         },
         {
             "name":"/node_modules",
-            "children":[".bin","app.php"]
+            "children":["/.bin",
+            {
+                "name":"/cache",
+                "tag":["run-served"]
+            },
+            {
+                "name":"/vue",
+                "power":1
+            },
+            {
+                "name":"/eslint",
+                "tag":["eslint"]
+            },
+            {
+                "name":"/babel-code-frame",
+                "tag":["babeljs"]
+            }]
         },
         {
             "name":"/public",

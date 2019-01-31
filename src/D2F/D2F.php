@@ -3,9 +3,10 @@
 namespace vitech\D2F;
 
 use vitech\D2F\Exception\InvalidDirException;
+use InvalidArgumentException;
 
 define("DEFAULT_POWER",0.5);
-define("MINUMUM_MATCH",0.2);
+define("MINUMUM_MATCH",1);
 
 class D2F {
 
@@ -99,12 +100,52 @@ class D2F {
 
     }
 
+    /**
+     * Scan dir structure with directory
+     *
+     * @param string $dir Directory string
+     * @param integer $depth Positive, the scanning depth
+     * @throws InvalidArgumentException
+     * @return array
+     */
+    public function readDir($dir,$depth = 0){
+        if ($depth < 0) throw new InvalidArgumentException("Input dir depth must be positive");
+
+        if (!is_string($dir)) throw new InvalidArgumentException("Input dir must be a string");
+        
+        clearstatcache();
+        return $this->scan($dir,$depth);
+    }
+    /**
+     * Judging the framework based on input directory
+     *
+     * @param string $dir Directory string
+     * @param integer $depth Positive, the scanning depth
+     * @param boolean $deep Use deep searching
+     * @param boolean $simple Whether the output is simple string
+     * @param boolean $showAll Show low-match result
+     * @throws InvalidDirException
+     * @throws InvalidArgumentException
+     * @return array
+     */
+    public function analyzeDir($dir,$depth = 0,$deep = true,$simple = false,$showAll = false) {
+        return $this->analyze($this->readDir($dir,$depth),$deep,$simple,$showAll);
+    }
+
+    /**
+     * Dir match sorting
+     *
+     * @param array $a
+     * @param array $b
+     * @return integer
+     */
     protected function matchSort($a,$b) {
         $aa = $a["result"]["match"];
         $bb = $b["result"]["match"];
         if ($aa == $bb) return 0;
         return ($aa > $bb) ? -1 : 1;
     }
+
 
     protected function formatResult($ans) {
         $ansC= $ans;
@@ -157,11 +198,11 @@ class D2F {
             if (empty($libTag) && $libVersion == "") $sum ++;
 
             //Global Tag
-            if (array_key_exists("global",$libVal)) $tempMatch = 0;
+            if ($libIsArray && array_key_exists("global",$libVal)) $tempMatch = 0;
             else $tempMatch = 1/($pow + 0.001);
 
             foreach($dir as $dirVal) {
-                if (is_array($dirVal) && validDirArray($dirVal)) {
+                if (is_array($dirVal) && $this->validDirArray($dirVal)) {
                     if ($dirVal["name"] == $name) {
                         $tm = $tempMatch;
                         
@@ -305,5 +346,40 @@ class D2F {
         $this->validDirString($arr["name"]);
 
         return true;
+    }
+
+    /**
+     * Scan dir
+     *
+     * @param string $dir
+     * @param integer $restDepth
+     * @return array
+     */
+    protected function scan($dir,$restDepth) {
+        $m = scandir($dir);
+        if (!$m || count($m) < 3) return [];
+        if ($m[0] == '.') array_shift($m);
+        if ($m[0] == '..') array_shift($m);
+
+        $ans = [];
+        foreach($m as $d) {
+            $child = $dir.DIRECTORY_SEPARATOR.$d;
+            if (is_dir($child)) {
+                if ($restDepth > 0) {
+                    $ans[] = [
+                        "name"=>"/".$d,
+                        "children"=> $this->scan($child,$restDepth-1)
+                    ];    
+                } else {
+                    $ans[] = "/".$d;
+                }
+            } else if (is_link($child)) {
+                $ans[] = "//".$d;
+            }
+            else{
+                $ans[] = $d;
+            }
+        }
+        return $ans;
     }
 }

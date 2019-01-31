@@ -21,22 +21,22 @@ class D2FTest extends TestCase {
             "composer.lock","package.json","package-lock.json","phpunit.xml","readme.md",
             "server.php","webpack.mix.js"
         ];
-        $res = $d->analyze($testdir,true,false,true);
-        print_r($res);
+        $res = $d->analyze($testdir,true,true,false);
+        print_r($res[0]);
 
-        $this->assertEquals($res[0]["name"],"laravel");
+        $this->assertEquals($res[0],"laravel");
     }
 
-    // public function testDeepSearchLaravel51() {
-    //     $d = new D2F;
-    //     $testdir = [
-    //         "/app","/bootstrap","/config","/public","/resources",
-    //         "/storage","/tests",".gitignore","artisan","composer.json",
-    //         "composer.lock","package.json","README.md","server.php",
-    //     ];
-    //     $res = $d->analyze($testdir);
-    //     print_r($res);
+    public function testDeepSearchLaravel51() {
+        $d = new D2F;
+        $testdir = [
+            "/app","/bootstrap","/config","/public","/resources",
+            "/storage","/tests",".gitignore","artisan","composer.json",
+            "composer.lock","package.json","README.md","server.php",
+        ];
+        $res = $d->analyze($testdir,true,true,false);
+        print_r($res[0]);
 
-    //     $this->assertEquals($res[0]["name"],"laravel");
-    // }
+        $this->assertEquals($res[0],"laravel");
+    }
 }
